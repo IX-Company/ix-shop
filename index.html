@@ -1,3 +1,4 @@
+cat > ix-shop-supabase-fixed.html << 'EOF'
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -612,13 +613,14 @@ async function descargarCodigo(productoId) {
 }
 
 // ============================================================
-// ADMIN
+// ADMIN - ATAJO CORREGIDO (Ctrl+Shift+X)
 // ============================================================
 
 let adminOpen = false;
 
 document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+    // 🔥 ATAJO CAMBIADO A Ctrl+Shift+X (para no interferir con Firefox)
+    if (e.ctrlKey && e.shiftKey && (e.key === 'x' || e.key === 'X')) {
         e.preventDefault();
         toggleAdmin();
     }
@@ -1196,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (e.key === 'Enter') canjearCodigo();
     });
 
-    console.log('%c🔐 Admin: Ctrl+Shift+A', 'font-size:18px;color:#6C3CE1;font-weight:bold;');
+    console.log('%c🔐 Admin: Ctrl+Shift+X', 'font-size:18px;color:#6C3CE1;font-weight:bold;');
     console.log('%c🔑 Contraseña: By7MKYKR9QrtmGI5iqJOKzvVfqBoMV', 'font-size:14px;color:#8892B0;');
 });
 </script>
@@ -1209,9 +1211,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 🔴 ¡REEMPLAZA CON TUS DATOS DE SUPABASE!
     // ============================================================
     const SUPABASE_URL = 'https://webdjvruyxcavrkttnwo.supabase.co';  // 👈 TU URL
-    const SUPABASE_KEY = 'sb_publishable_dO6b78SSlukq-uoFEUlZLQ_1-xYSc4i';
+    const SUPABASE_KEY = 'sb_publishable_dO6b78SSlukq-uoFEUlZLQ_1-xYSc4i';           // 👈 TU CLAVE ANON PUBLIC
     // ============================================================
 </script>
 
 </body>
 </html>
+EOF
