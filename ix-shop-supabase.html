@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IX | SHOP - Distribución Digital</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0A0A1A; color: #FFFFFF; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; padding: 30px 0 20px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 25px; }
+        .logo { font-size: 40px; font-weight: 900; background: linear-gradient(135deg, #6C3CE1, #00D4FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header .sub { color: #8892B0; font-size: 14px; margin-top: 4px; }
+        .db-status { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
+        .db-status.online { background: rgba(0,200,83,0.15); color: #00C853; }
+        .db-status.offline { background: rgba(255,107,107,0.15); color: #FF6B6B; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; }
+        .tab-btn { padding: 10px 28px; background: transparent; border: none; color: #8892B0; border-radius: 12px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500; }
+        .tab-btn:hover { color: #FFFFFF; background: rgba(255,255,255,0.03); }
+        .tab-btn.active { color: #FFFFFF; background: linear-gradient(135deg, rgba(108,60,225,0.15), rgba(0,212,255,0.05)); }
+        .tab-btn.active::after { content: ''; display: block; width: 30px; height: 3px; background: linear-gradient(90deg, #6C3CE1, #00D4FF); border-radius: 4px; margin: 6px auto 0; }
+        .tab-content { display: none; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 30px; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .sub-text { color: #8892B0; font-size: 14px; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #8892B0; font-size: 13px; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: white; font-size: 14px; transition: all 0.3s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #6C3CE1; }
+        .form-group select option { background: #1a1a2e; color: white; }
+        .form-group textarea { min-height: 60px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .form-group .help { color: #8892B0; font-size: 11px; margin-top: 4px; display: block; }
+
+        .btn-primary { background: linear-gradient(135deg, #6C3CE1, #5A2FC7); color: white; border: none; padding: 12px 28px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s; width: 100%; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,60,225,0.25); }
+        .btn-success { background: linear-gradient(135deg, #00C853, #00E676); color: #0A0A1A; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,200,83,0.25); }
+        .btn-danger { background: linear-gradient(135deg, #FF6B6B, #E74C3C); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.3s; }
+        .btn-danger:hover { transform: scale(1.05); }
+        .btn-sm { padding: 6px 18px; font-size: 12px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.3s; font-weight: 600; }
+        .btn-sm:hover { transform: translateY(-2px); }
+        .btn-azul { background: linear-gradient(135deg, #00D4FF, #0099FF); color: #0A0A1A; }
+        .btn-naranja { background: linear-gradient(135deg, #FF9800, #F57C00); color: white; }
+        .btn-verde { background: linear-gradient(135deg, #00C853, #00E676); color: #0A0A1A; }
+
+        .producto-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; margin-bottom: 15px; transition: all 0.3s; }
+        .producto-card:hover { border-color: rgba(108,60,225,0.2); transform: translateY(-2px); }
+        .producto-card .top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+        .producto-card .nombre { font-size: 18px; font-weight: 700; }
+        .producto-card .desc { color: #8892B0; font-size: 13px; margin: 8px 0; line-height: 1.5; }
+        .producto-card .tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0; }
+        .producto-card .tag { background: rgba(255,255,255,0.04); padding: 3px 12px; border-radius: 16px; font-size: 11px; color: #8892B0; border: 1px solid rgba(255,255,255,0.04); }
+        .producto-card .badge { display: inline-block; padding: 2px 12px; border-radius: 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-left: 6px; }
+        .badge-gratis { background: rgba(0,200,83,0.15); color: #00C853; border: 1px solid rgba(0,200,83,0.15); }
+        .badge-pago { background: rgba(255,214,0,0.15); color: #FFD600; border: 1px solid rgba(255,214,0,0.15); }
+        .badge-limitado { background: rgba(255,107,107,0.15); color: #FF6B6B; border: 1px solid rgba(255,107,107,0.15); }
+        .producto-card .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap; gap: 10px; }
+        .producto-card .precio { font-size: 18px; font-weight: 700; color: #00D4FF; }
+
+        .codigo-item { display: inline-block; background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.08); padding: 3px 12px; border-radius: 8px; font-family: monospace; font-size: 11px; margin: 2px; }
+        .codigo-item.usado { opacity: 0.3; text-decoration: line-through; }
+        .codigo-item .estado { font-size: 9px; }
+        .codigo-item .disponible { color: #00C853; }
+        .codigo-item .usado-text { color: #FF6B6B; }
+
+        .exito { background: rgba(0,200,83,0.06); border: 1px solid rgba(0,200,83,0.12); padding: 20px; border-radius: 14px; margin: 12px 0; }
+        .error { background: rgba(255,107,107,0.06); border: 1px solid rgba(255,107,107,0.12); padding: 20px; border-radius: 14px; margin: 12px 0; }
+        .codigo-grande { font-family: 'Courier New', monospace; font-size: 28px; color: #00D4FF; background: rgba(0,0,0,0.3); padding: 14px 30px; border-radius: 12px; display: inline-block; letter-spacing: 4px; margin: 10px 0; border: 1px solid rgba(0,212,255,0.15); }
+
+        .canjear-box { display: flex; gap: 12px; flex-wrap: wrap; }
+        .canjear-box input { flex: 1; min-width: 200px; padding: 14px 20px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.06); border-radius: 12px; color: white; font-size: 16px; font-family: monospace; letter-spacing: 2px; }
+        .canjear-box input:focus { outline: none; border-color: #6C3CE1; }
+
+        .file-upload input[type="file"] { display: none; }
+        .file-upload label { background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.06); padding: 30px; border-radius: 14px; cursor: pointer; text-align: center; width: 100%; transition: all 0.3s; display: block; }
+        .file-upload label:hover { border-color: #6C3CE1; background: rgba(108,60,225,0.04); }
+        .file-upload label .icono { font-size: 40px; display: block; margin-bottom: 10px; }
+        .file-upload label .texto { color: #8892B0; font-size: 13px; }
+
+        .archivo-tag { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.08); padding: 4px 14px; border-radius: 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 8px; margin: 3px; }
+        .archivo-tag .eliminar { color: #FF6B6B; cursor: pointer; font-weight: bold; }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 14px; text-align: center; }
+        .stat-card .num { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #6C3CE1, #00D4FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card .label { color: #8892B0; font-size: 11px; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .empty { text-align: center; padding: 50px 20px; color: #8892B0; }
+        .empty .icono { font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.2; }
+        .empty h3 { font-size: 18px; color: #FFFFFF; margin-bottom: 6px; }
+        .empty p { font-size: 13px; }
+
+        .loading { text-align: center; padding: 40px; color: #8892B0; }
+        .loading .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.05); border-top: 3px solid #6C3CE1; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .admin-login { text-align: center; padding: 50px 20px; }
+        .admin-login .lock { font-size: 50px; margin-bottom: 15px; }
+        .admin-login input { padding: 12px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: white; font-size: 15px; width: 260px; max-width: 100%; text-align: center; }
+        .admin-login input:focus { outline: none; border-color: #6C3CE1; }
+
+        .admin-trigger { position: fixed; bottom: 15px; right: 15px; width: 35px; height: 35px; background: transparent; border: none; cursor: pointer; opacity: 0; z-index: 9999; }
+        .admin-trigger:hover { opacity: 0.1; }
+
+        .toast { position: fixed; bottom: 25px; right: 25px; background: rgba(10,10,26,0.95); border: 1px solid rgba(255,255,255,0.08); padding: 14px 24px; border-radius: 12px; color: white; font-size: 13px; backdrop-filter: blur(20px); z-index: 99999; border-left: 4px solid #6C3CE1; animation: fadeIn 0.3s ease; }
+        .toast-hidden { opacity: 0; transition: opacity 0.3s; }
+
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .producto-card .top { flex-direction: column; }
+            .canjear-box { flex-direction: column; }
+            .canjear-box input { min-width: 100%; }
+            .tab-btn { padding: 8px 16px; font-size: 12px; }
+            .tab-content { padding: 18px; }
+            .logo { font-size: 30px; }
+        }
+        @media (max-width: 480px) {
+            .container { padding: 12px; }
+            .tab-content { padding: 14px; }
+            .tab-btn { padding: 6px 12px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">IX | SHOP</div>
+        <div class="sub">
+            Distribución Digital Profesional con Licencias
+            <span id="dbStatus" class="db-status offline">⬇️ Conectando...</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="mostrarTab('tienda')">🏪 Tienda</button>
+        <button class="tab-btn" onclick="mostrarTab('canjear')">🔑 Canjear</button>
+    </div>
+
+    <div id="tab-tienda" class="tab-content active">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <div>
+                <h2>📦 Catálogo de Productos</h2>
+                <p class="sub-text">Selecciona un producto y obtén tu código de licencia</p>
+            </div>
+            <button class="btn-sm btn-azul" onclick="cargarProductos()">🔄 Actualizar</button>
+        </div>
+        <div id="productosContainer">
+            <div class="loading"><div class="spinner"></div><p style="margin-top:10px;">Cargando productos...</p></div>
+        </div>
+    </div>
+
+    <div id="tab-canjear" class="tab-content">
+        <h2>🔑 Canjear Código de Licencia</h2>
+        <p class="sub-text">Introduce el código que recibiste en el PDF para descargar tu producto</p>
+        <div class="canjear-box">
+            <input type="text" id="codigoInput" placeholder="IX-ABCD-1234-EFGH" maxlength="19" autocomplete="off">
+            <button class="btn-success" onclick="canjearCodigo()">🔓 Canjear ahora</button>
+        </div>
+        <div id="resultadoCanje"></div>
+    </div>
+
+    <div id="tab-admin" class="tab-content" style="display:none;">
+        <h2>🛠️ Panel de Administración</h2>
+        <p class="sub-text">Gestiona tus productos, licencias y archivos</p>
+        <div id="adminContent"></div>
+    </div>
+
+    <button class="admin-trigger" id="adminTrigger"></button>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+const ADMIN_PASSWORD = 'By7MKYKR9QrtmGI5iqJOKzvVfqBoMV';
+let adminUnlocked = false;
+let supabase = null;
+let productosDB = [];
+
+// ============================================================
+// FUNCIONES
+// ============================================================
+
+async function initSupabase() {
+    try {
+        supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const status = document.getElementById('dbStatus');
+        const { error } = await supabase.from('productos').select('count', { count: 'exact', head: true });
+        if (error) throw error;
+        status.className = 'db-status online';
+        status.textContent = '🟢 Online';
+        return true;
+    } catch (e) {
+        const status = document.getElementById('dbStatus');
+        status.className = 'db-status offline';
+        status.textContent = '🔴 Offline';
+        console.error('Error de conexión:', e);
+        mostrarToast('❌ Error al conectar con Supabase');
+        return false;
+    }
+}
+
+async function cargarProductos() {
+    const container = document.getElementById('productosContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:10px;">Cargando productos...</p></div>';
+
+    try {
+        const { data, error } = await supabase
+            .from('productos')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) throw error;
+
+        productosDB = data || [];
+        renderizarProductos();
+        if (adminUnlocked) renderizarAdminLista();
+        mostrarToast(`✅ ${data.length} productos cargados`);
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = `<div class="error">❌ Error al cargar productos: ${error.message}</div>`;
+        mostrarToast('❌ Error al cargar productos');
+    }
+}
+
+async function crearProductoDB(producto) {
+    try {
+        const { data, error } = await supabase
+            .from('productos')
+            .insert([producto])
+            .select();
+
+        if (error) throw error;
+        await cargarProductos();
+        mostrarToast(`✅ Producto "${producto.nombre}" creado`);
+        return data[0];
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarToast(`❌ Error: ${error.message}`);
+        return null;
+    }
+}
+
+async function actualizarProductoDB(id, datos) {
+    try {
+        const { error } = await supabase
+            .from('productos')
+            .update(datos)
+            .eq('id', id);
+
+        if (error) throw error;
+        await cargarProductos();
+        mostrarToast('✅ Producto actualizado');
+        return true;
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarToast(`❌ Error: ${error.message}`);
+        return false;
+    }
+}
+
+async function eliminarProductoDB(id) {
+    if (!confirm('¿Eliminar este producto?')) return false;
+
+    try {
+        const { error } = await supabase
+            .from('productos')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        await cargarProductos();
+        mostrarToast('🗑️ Producto eliminado');
+        return true;
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarToast(`❌ Error: ${error.message}`);
+        return false;
+    }
+}
+
+function generarCodigo() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let codigo = 'IX-';
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 4; j++) {
+            codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        if (i < 2) codigo += '-';
+    }
+    return codigo;
+}
+
+function getProductos() {
+    return productosDB || [];
+}
+
+function mostrarToast(mensaje) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = mensaje;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('toast-hidden');
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+function generarPDFProfesional(codigo, producto) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const w = 210;
+    const h = 297;
+    const m = 18;
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, w, h, 'F');
+
+    doc.setDrawColor(200, 200, 210);
+    doc.setLineWidth(0.3);
+    doc.rect(m, m, w - m*2, h - m*2, 'S');
+
+    doc.setFillColor(108, 60, 225);
+    doc.rect(m, m, w - m*2, 3, 'F');
+
+    doc.setFontSize(24);
+    doc.setTextColor(108, 60, 225);
+    doc.setFont('helvetica', 'bold');
+    doc.text('IX | SHOP', w/2, m + 18, { align: 'center' });
+
+    doc.setFontSize(9);
+    doc.setTextColor(130, 130, 160);
+    doc.setFont('helvetica', 'normal');
+    doc.text('LICENCIA DE DISTRIBUCIÓN DIGITAL', w/2, m + 28, { align: 'center' });
+
+    let y = m + 38;
+
+    doc.setDrawColor(230, 230, 240);
+    doc.setLineWidth(0.2);
+    doc.line(m + 10, y, w - m - 10, y);
+    y += 6;
+
+    doc.setFillColor(248, 248, 252);
+    doc.rect(m + 5, y - 2, w - m*2 - 10, 28, 'F');
+    doc.setDrawColor(220, 220, 235);
+    doc.setLineWidth(0.2);
+    doc.rect(m + 5, y - 2, w - m*2 - 10, 28, 'S');
+
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 180);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRODUCTO', m + 15, y + 5);
+    doc.text('VERSIÓN', m + 15 + 70, y + 5);
+    doc.text('CATEGORÍA', m + 15 + 110, y + 5);
+
+    doc.setFontSize(11);
+    doc.setTextColor(40, 40, 60);
+    doc.setFont('helvetica', 'normal');
+    const nombreCorto = producto.nombre ? producto.nombre.substring(0, 25) : 'Sin nombre';
+    doc.text(nombreCorto, m + 15, y + 19);
+    doc.text(`v${producto.version || '1.0.0'}`, m + 15 + 70, y + 19);
+    doc.text((producto.categoria || 'producto').toUpperCase(), m + 15 + 110, y + 19);
+
+    y += 34;
+
+    doc.setFillColor(245, 242, 255);
+    doc.rect(m + 5, y - 2, w - m*2 - 10, 28, 'F');
+    doc.setDrawColor(108, 60, 225);
+    doc.setLineWidth(0.5);
+    doc.rect(m + 5, y - 2, w - m*2 - 10, 28, 'S');
+
+    doc.setFontSize(9);
+    doc.setTextColor(108, 60, 225);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CÓDIGO DE LICENCIA', w/2, y + 6, { align: 'center' });
+
+    doc.setFontSize(20);
+    doc.setTextColor(60, 40, 120);
+    doc.setFont('courier', 'bold');
+    doc.text(codigo, w/2, y + 23, { align: 'center' });
+
+    y += 34;
+
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 110);
+    doc.setFont('helvetica', 'normal');
+    const plataformas = producto.plataformas ? producto.plataformas.join(', ') : 'No especificadas';
+    doc.text(`Plataformas: ${plataformas}  |  Precio: ${producto.precio || 'Gratis'}  |  Tipo: ${(producto.tipo_licencia || 'gratis').toUpperCase()}`, m + 10, y);
+    y += 10;
+
+    doc.setDrawColor(230, 230, 240);
+    doc.setLineWidth(0.2);
+    doc.line(m + 10, y, w - m - 10, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INSTRUCCIONES DE CANJE', m + 10, y);
+    y += 6;
+
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 110);
+    doc.setFont('helvetica', 'normal');
+    doc.text('1. Visita: https://ixshop.com/canjear', m + 14, y);
+    y += 5;
+    doc.text('2. Introduce el código de licencia', m + 14, y);
+    y += 5;
+    doc.text('3. Descarga tu producto al instante', m + 14, y);
+    y += 8;
+
+    doc.setFillColor(255, 248, 248);
+    doc.rect(m + 5, y - 2, w - m*2 - 10, 18, 'F');
+    doc.setDrawColor(255, 200, 200);
+    doc.setLineWidth(0.2);
+    doc.rect(m + 5, y - 2, w - m*2 - 10, 18, 'S');
+
+    doc.setFontSize(8);
+    doc.setTextColor(180, 50, 50);
+    doc.setFont('helvetica', 'bold');
+    doc.text('IMPORTANTE', m + 15, y + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 60, 60);
+    doc.setFontSize(7);
+    doc.text('• Código de UN SOLO USO. No compartir.', m + 15, y + 12);
+
+    y += 24;
+
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TÉRMINOS Y CONDICIONES', m + 10, y);
+    y += 5;
+
+    doc.setFontSize(7);
+    doc.setTextColor(80, 80, 110);
+    doc.setFont('helvetica', 'normal');
+    const terminos = [
+        '1. Licencia personal e intransferible para un único dispositivo.',
+        '2. Prohibida la distribución, ingeniería inversa o modificación.',
+        '3. Producto "TAL CUAL" sin garantías explícitas.',
+        '4. Soporte técnico por 30 días desde la activación.',
+        '5. IX | SHOP puede revocar la licencia por uso indebido.',
+        '6. Al canjear el código, aceptas todas las políticas.'
+    ];
+    terminos.forEach(line => {
+        doc.text(line, m + 14, y);
+        y += 4.5;
+    });
+
+    const fecha = new Date().toLocaleDateString('es-ES', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    });
+
+    doc.setDrawColor(220, 220, 235);
+    doc.setLineWidth(0.2);
+    doc.line(m + 10, h - m - 12, w - m - 10, h - m - 12);
+
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 180);
+    doc.text(`Fecha: ${fecha}`, m + 10, h - m - 4);
+    doc.text('© 2026 IX | SHOP - Todos los derechos reservados', w/2, h - m - 4, { align: 'center' });
+
+    doc.save(`LICENCIA_${producto.nombre.replace(/ /g, '_')}_${codigo}.pdf`);
+}
+
+function renderizarProductos() {
+    const productos = getProductos();
+    const container = document.getElementById('productosContainer');
+
+    if (!productos || productos.length === 0) {
+        container.innerHTML = `
+            <div class="empty">
+                <span class="icono">📭</span>
+                <h3>No hay productos disponibles</h3>
+                <p>El catálogo está vacío. Vuelve más tarde.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const emojis = { juego: '🎮', app: '📱', programa: '💻' };
+
+    container.innerHTML = productos.map(p => {
+        const codigos = p.codigos || {};
+        const total = Object.keys(codigos).length;
+        const usados = Object.values(codigos).filter(c => c.usado).length;
+        const disponibles = total - usados;
+
+        let badge = '';
+        if (p.tipo_licencia === 'gratis') badge = '<span class="badge badge-gratis">GRATIS</span>';
+        else if (p.tipo_licencia === 'pago') badge = '<span class="badge badge-pago">PAGO</span>';
+        else if (p.tipo_licencia === 'limitado') badge = '<span class="badge badge-limitado">LIMITADO</span>';
+
+        let stockText = '';
+        if (p.tipo_licencia === 'limitado') stockText = `🎫 ${disponibles} disponibles`;
+        else if (p.tipo_licencia === 'pago') stockText = `🔒 ${total} códigos`;
+        else stockText = '♾️ Ilimitado';
+
+        let btnText = '📥 Obtener código';
+        let btnDisabled = '';
+
+        if (p.tipo_licencia === 'limitado' && disponibles === 0) {
+            btnText = '❌ Agotado';
+            btnDisabled = 'disabled';
+        } else if (p.tipo_licencia === 'pago' && total === 0) {
+            btnText = '🔒 Sin códigos';
+            btnDisabled = 'disabled';
+        }
+
+        const archivos = p.archivos || [];
+        const tieneArchivos = archivos.length > 0;
+
+        return `
+            <div class="producto-card">
+                <div class="top">
+                    <div>
+                        <span class="nombre">${emojis[p.categoria] || '📦'} ${p.nombre} ${badge}</span>
+                        ${tieneArchivos ? '<span style="color:#00C853;font-size:12px;margin-left:8px;">📎 Con instalador</span>' : '<span style="color:#FF6B6B;font-size:12px;margin-left:8px;">⚠️ Sin instalador</span>'}
+                    </div>
+                    <span class="precio">${p.precio || 'Gratis'}</span>
+                </div>
+                <div class="desc">${p.descripcion || 'Sin descripción'}</div>
+                <div class="tags">
+                    ${(p.plataformas || []).map(plat => `<span class="tag">${plat}</span>`).join('')}
+                    <span class="tag">v${p.version || '1.0.0'}</span>
+                    <span class="tag">${stockText}</span>
+                </div>
+                <div class="footer">
+                    <span style="color:#8892B0;font-size:13px;">${tieneArchivos ? `📎 ${archivos.length} archivo(s)` : '⚠️ Sin archivos'}</span>
+                    <button class="btn-primary" onclick="descargarCodigo('${p.id}')" ${btnDisabled} style="width:auto;padding:10px 28px;font-size:14px;border-radius:10px;">
+                        ${btnText}
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function descargarCodigo(productoId) {
+    const productos = getProductos();
+    const producto = productos.find(p => p.id == productoId);
+
+    if (!producto) {
+        mostrarToast('❌ Producto no encontrado');
+        return;
+    }
+
+    const codigos = producto.codigos || {};
+
+    if (producto.tipo_licencia === 'limitado') {
+        const disponibles = Object.values(codigos).filter(c => !c.usado).length;
+        if (disponibles === 0) {
+            mostrarToast('❌ Edición limitada agotada');
+            return;
+        }
+    }
+
+    if (producto.tipo_licencia === 'pago' && Object.keys(codigos).length === 0) {
+        mostrarToast('❌ No hay códigos disponibles. Contacta al admin.');
+        return;
+    }
+
+    let codigo;
+
+    if (producto.tipo_licencia === 'pago') {
+        const noUsados = Object.entries(codigos).filter(([k, v]) => !v.usado);
+        if (noUsados.length === 0) {
+            mostrarToast('❌ No hay códigos disponibles');
+            return;
+        }
+        codigo = noUsados[0][0];
+        codigos[codigo].usado = true;
+    } else {
+        do { codigo = generarCodigo(); } while (codigos[codigo]);
+        codigos[codigo] = { usado: false };
+    }
+
+    const actualizado = await actualizarProductoDB(producto.id, { codigos: codigos });
+    if (!actualizado) return;
+
+    generarPDFProfesional(codigo, producto);
+
+    const archivos = producto.archivos || [];
+    if (archivos.length > 0) {
+        setTimeout(() => {
+            archivos.forEach((archivo, index) => {
+                const link = document.createElement('a');
+                link.href = archivo.datos;
+                link.download = archivo.nombre;
+                document.body.appendChild(link);
+                setTimeout(() => {
+                    link.click();
+                    document.body.removeChild(link);
+                }, index * 300);
+            });
+            mostrarToast(`📦 ${archivos.length} archivo(s) descargando...`);
+        }, 600);
+    } else {
+        mostrarToast(`✅ Código: ${codigo} - PDF descargado`);
+    }
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+
+let adminOpen = false;
+
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        toggleAdmin();
+    }
+});
+
+function toggleAdmin() {
+    const tab = document.getElementById('tab-admin');
+    const tabsContainer = document.querySelector('.tabs');
+
+    if (adminOpen) {
+        tab.style.display = 'none';
+        adminOpen = false;
+        const btn = document.querySelector('.tab-btn[data-admin="true"]');
+        if (btn) btn.remove();
+        return;
+    }
+
+    adminOpen = true;
+    tab.style.display = 'block';
+
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.dataset.admin = 'true';
+    btn.innerHTML = '🛠️ Admin';
+    btn.onclick = function() { mostrarTab('admin'); };
+    tabsContainer.appendChild(btn);
+
+    if (!adminUnlocked) {
+        document.getElementById('adminContent').innerHTML = `
+            <div class="admin-login">
+                <div class="lock">🔒</div>
+                <h3>Acceso Restringido</h3>
+                <p style="color:#8892B0;margin-bottom:15px;">Introduce la contraseña para acceder al panel</p>
+                <input type="password" id="adminPassword" placeholder="Contraseña" onkeypress="if(event.key==='Enter')verificarAdmin()">
+                <br>
+                <button class="btn-primary" onclick="verificarAdmin()" style="width:auto;padding:12px 40px;">🔓 Desbloquear</button>
+            </div>
+        `;
+    } else {
+        renderizarAdminCompleto();
+    }
+}
+
+function verificarAdmin() {
+    const pass = document.getElementById('adminPassword').value;
+    if (pass === ADMIN_PASSWORD) {
+        adminUnlocked = true;
+        renderizarAdminCompleto();
+        mostrarToast('🔓 Panel desbloqueado');
+    } else {
+        mostrarToast('❌ Contraseña incorrecta');
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminPassword').focus();
+    }
+}
+
+function renderizarAdminCompleto() {
+    const container = document.getElementById('adminContent');
+    container.innerHTML = `
+        <div id="adminStats" class="stats"></div>
+
+        <div style="background:rgba(255,255,255,0.02);border-radius:16px;padding:25px;margin-bottom:25px;border:1px solid rgba(255,255,255,0.04);">
+            <h3 style="margin-bottom:15px;font-size:18px;">➕ Crear Nuevo Producto</h3>
+            <form id="formProductoAdmin">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="nombreProducto" placeholder="Mi Juego" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select id="categoriaProducto">
+                            <option value="juego">🎮 Juego</option>
+                            <option value="app">📱 App</option>
+                            <option value="programa">💻 Programa</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="descripcionProducto" placeholder="Descripción del producto" rows="2"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Versión</label>
+                        <input type="text" id="versionProducto" value="1.0.0">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Licencia *</label>
+                        <select id="tipoLicencia">
+                            <option value="gratis">🎁 Gratis</option>
+                            <option value="pago">🔒 Pago</option>
+                            <option value="limitado">⭐ Edición Limitada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio</label>
+                        <input type="text" id="precioProducto" value="Gratis">
+                    </div>
+                    <div class="form-group" id="stockGroup">
+                        <label>Stock (Limitado)</label>
+                        <input type="number" id="stockProducto" value="5" min="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Plataformas * (Ctrl+clic para múltiple)</label>
+                    <select id="plataformasProducto" multiple style="height:90px;">
+                        <option value="windows">🪟 Windows</option>
+                        <option value="macos">🍎 macOS</option>
+                        <option value="linux">🐧 Linux</option>
+                        <option value="android">📱 Android</option>
+                        <option value="ios">🍏 iOS</option>
+                    </select>
+                    <span class="help">Mantén Ctrl (Cmd) para seleccionar varias</span>
+                </div>
+
+                <div class="form-group">
+                    <label>📎 Subir instaladores</label>
+                    <div class="file-upload">
+                        <label for="fileInput">
+                            <span class="icono">📤</span>
+                            <span class="texto">Haz clic para subir archivos</span>
+                            <span style="color:#8892B0;font-size:11px;display:block;margin-top:5px;">.exe .apk .dmg .deb .AppImage .ipa .msi .pkg</span>
+                        </label>
+                        <input type="file" id="fileInput" multiple accept=".exe,.apk,.dmg,.deb,.AppImage,.ipa,.msi,.pkg,.sh,.bin,.run">
+                    </div>
+                    <div id="listaArchivosSubidos" style="margin-top:10px;"></div>
+                </div>
+
+                <button type="submit" class="btn-primary">✅ Crear Producto</button>
+            </form>
+        </div>
+
+        <h3 style="margin-bottom:15px;font-size:18px;">📋 Productos Registrados</h3>
+        <div id="adminListaProductos"></div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid rgba(255,255,255,0.04);">
+            <button class="btn-sm btn-azul" onclick="generarCodigoPrivado()">🔑 Generar Código</button>
+            <button class="btn-sm btn-naranja" onclick="exportarDatos()">💾 Exportar</button>
+            <button class="btn-sm" style="background:#2196F3;color:white;" onclick="importarDatos()">📂 Importar</button>
+            <button class="btn-sm btn-danger" onclick="limpiarTodo()">🗑️ Resetear</button>
+        </div>
+    `;
+
+    document.getElementById('formProductoAdmin').addEventListener('submit', function(e) {
+        e.preventDefault();
+        crearProductoAdmin();
+    });
+
+    document.getElementById('tipoLicencia').addEventListener('change', function() {
+        document.getElementById('stockGroup').style.display = this.value === 'limitado' ? 'block' : 'none';
+    });
+    document.getElementById('tipoLicencia').dispatchEvent(new Event('change'));
+
+    let archivosTemp = [];
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                archivosTemp.push({
+                    nombre: file.name,
+                    tipo: file.type,
+                    tamaño: file.size,
+                    datos: event.target.result
+                });
+                mostrarArchivosSubidos(archivosTemp);
+            };
+            reader.readAsDataURL(file);
+        });
+        this.value = '';
+    });
+
+    window.mostrarArchivosSubidos = function(archivos) {
+        const container = document.getElementById('listaArchivosSubidos');
+        if (!archivos || archivos.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        container.innerHTML = archivos.map((a, i) => `
+            <span class="archivo-tag">
+                📎 ${a.nombre} (${(a.tamaño/1024).toFixed(1)} KB)
+                <span class="eliminar" onclick="eliminarArchivoTemp(${i})">✕</span>
+            </span>
+        `).join('');
+        window.archivosTempAdmin = archivos;
+    };
+
+    window.eliminarArchivoTemp = function(index) {
+        if (window.archivosTempAdmin) {
+            window.archivosTempAdmin.splice(index, 1);
+            mostrarArchivosSubidos(window.archivosTempAdmin);
+        }
+    };
+
+    renderizarAdminLista();
+    actualizarStatsAdmin();
+}
+
+async function crearProductoAdmin() {
+    const nombre = document.getElementById('nombreProducto').value.trim();
+    const categoria = document.getElementById('categoriaProducto').value;
+    const descripcion = document.getElementById('descripcionProducto').value.trim();
+    const version = document.getElementById('versionProducto').value.trim() || '1.0.0';
+    const tipo_licencia = document.getElementById('tipoLicencia').value;
+    const precio = document.getElementById('precioProducto').value.trim() || 'Gratis';
+    const stock = parseInt(document.getElementById('stockProducto').value) || null;
+
+    const selectPlat = document.getElementById('plataformasProducto');
+    const plataformas = Array.from(selectPlat.selectedOptions).map(opt => opt.value);
+
+    if (!nombre || plataformas.length === 0) {
+        mostrarToast('⚠️ Completa nombre y plataformas');
+        return;
+    }
+
+    const archivos = (window.archivosTempAdmin || []).map(a => ({
+        nombre: a.nombre,
+        datos: a.datos,
+        tamaño: a.tamaño
+    }));
+
+    const codigos = {};
+    if (tipo_licencia === 'limitado' && stock > 0) {
+        for (let i = 0; i < stock; i++) {
+            let codigo;
+            do { codigo = generarCodigo(); } while (codigos[codigo]);
+            codigos[codigo] = { usado: false };
+        }
+    }
+
+    const producto = {
+        nombre,
+        categoria,
+        descripcion,
+        plataformas,
+        version,
+        tipo_licencia,
+        precio,
+        archivos,
+        codigos
+    };
+
+    await crearProductoDB(producto);
+
+    window.archivosTempAdmin = [];
+    document.getElementById('listaArchivosSubidos').innerHTML = '';
+    document.getElementById('formProductoAdmin').reset();
+    document.getElementById('plataformasProducto').selectedIndex = -1;
+
+    renderizarAdminLista();
+    actualizarStatsAdmin();
+}
+
+function renderizarAdminLista() {
+    const productos = getProductos();
+    const container = document.getElementById('adminListaProductos');
+    if (!container) return;
+
+    if (!productos || productos.length === 0) {
+        container.innerHTML = '<p style="color:#8892B0;text-align:center;padding:20px;">No hay productos registrados.</p>';
+        return;
+    }
+
+    container.innerHTML = productos.map(p => {
+        const codigos = p.codigos || {};
+        const total = Object.keys(codigos).length;
+        const usados = Object.values(codigos).filter(c => c.usado).length;
+        const disponibles = total - usados;
+
+        return `
+            <div class="producto-card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <strong style="font-size:16px;">${p.nombre}</strong>
+                        ${p.tipo_licencia === 'gratis' ? '<span class="badge badge-gratis">GRATIS</span>' :
+                          p.tipo_licencia === 'pago' ? '<span class="badge badge-pago">PAGO</span>' :
+                          '<span class="badge badge-limitado">LIMITADO</span>'}
+                        <div style="color:#8892B0;font-size:13px;margin:4px 0;">${p.descripcion || ''}</div>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;margin:4px 0;">
+                            ${(p.plataformas || []).map(plat => `<span class="tag">${plat}</span>`).join('')}
+                            <span class="tag">v${p.version || '1.0.0'}</span>
+                            <span class="tag">${p.precio || 'Gratis'}</span>
+                        </div>
+                        <div style="font-size:13px;color:#8892B0;margin:4px 0;">
+                            ${p.tipo_licencia === 'limitado' ? `🎫 ${disponibles}/${total} disponibles` :
+                              p.tipo_licencia === 'pago' ? `🔒 ${total} códigos` :
+                              `♾️ ${total} códigos`}
+                            ${(p.archivos || []).length > 0 ? ` • 📎 ${p.archivos.length} archivo(s)` : ' • ⚠️ Sin archivos'}
+                        </div>
+                        ${total > 0 ? `
+                            <div style="margin-top:5px;">
+                                ${Object.entries(codigos).slice(0,4).map(([codigo, data]) => `
+                                    <span class="codigo-item ${data.usado ? 'usado' : ''}">
+                                        ${codigo}
+                                        <span class="estado ${data.usado ? 'usado-text' : 'disponible'}">
+                                            ${data.usado ? '🔒' : '✅'}
+                                        </span>
+                                    </span>
+                                `).join('')}
+                                ${total > 4 ? `<span style="color:#8892B0;font-size:11px;">+${total-4} más</span>` : ''}
+                            </div>
+                        ` : '<div style="color:#8892B0;font-size:12px;">📝 Sin códigos aún</div>'}
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        ${p.tipo_licencia === 'pago' ? `<button class="btn-sm btn-azul" onclick="generarCodigoPrivadoProducto('${p.id}')">+ Código</button>` : ''}
+                        ${p.tipo_licencia === 'limitado' ? `<button class="btn-sm" style="background:#FF9800;color:white;" onclick="agregarStock('${p.id}')">+ Stock</button>` : ''}
+                        <button class="btn-sm btn-danger" onclick="eliminarProducto('${p.id}')">🗑️</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function actualizarStatsAdmin() {
+    const container = document.getElementById('adminStats');
+    if (!container) return;
+
+    const productos = getProductos();
+    let totalProductos = productos.length;
+    let totalCodigos = 0;
+    let totalUsados = 0;
+
+    productos.forEach(p => {
+        const cods = Object.values(p.codigos || {});
+        totalCodigos += cods.length;
+        totalUsados += cods.filter(c => c.usado).length;
+    });
+
+    container.innerHTML = `
+        <div class="stat-card"><div class="num">${totalProductos}</div><div class="label">📦 Productos</div></div>
+        <div class="stat-card"><div class="num">${totalCodigos}</div><div class="label">🔑 Códigos</div></div>
+        <div class="stat-card"><div class="num" style="background:linear-gradient(135deg,#00C853,#00E676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${totalCodigos - totalUsados}</div><div class="label">✅ Disponibles</div></div>
+        <div class="stat-card"><div class="num" style="background:linear-gradient(135deg,#FF6B6B,#E74C3C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${totalUsados}</div><div class="label">🔒 Usados</div></div>
+    `;
+}
+
+async function generarCodigoPrivadoProducto(productoId) {
+    const productos = getProductos();
+    const producto = productos.find(p => p.id == productoId);
+    if (!producto) return;
+
+    const codigos = producto.codigos || {};
+    const codigo = generarCodigo();
+    codigos[codigo] = { usado: false };
+
+    await actualizarProductoDB(productoId, { codigos: codigos });
+    mostrarToast(`✅ Código: ${codigo}`);
+}
+
+async function agregarStock(productoId) {
+    const cantidad = prompt('¿Cuántos códigos agregar?', '5');
+    if (!cantidad || parseInt(cantidad) < 1) return;
+
+    const productos = getProductos();
+    const producto = productos.find(p => p.id == productoId);
+    if (!producto) return;
+
+    const codigos = producto.codigos || {};
+    for (let i = 0; i < parseInt(cantidad); i++) {
+        let codigo;
+        do { codigo = generarCodigo(); } while (codigos[codigo]);
+        codigos[codigo] = { usado: false };
+    }
+
+    await actualizarProductoDB(productoId, { codigos: codigos });
+    mostrarToast(`✅ ${cantidad} códigos agregados`);
+}
+
+async function eliminarProducto(productoId) {
+    await eliminarProductoDB(productoId);
+}
+
+function generarCodigoPrivado() {
+    const codigo = generarCodigo();
+    mostrarToast(`🔑 ${codigo}`);
+}
+
+function exportarDatos() {
+    const data = getProductos();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ixshop_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    mostrarToast('💾 Datos exportados');
+}
+
+function importarDatos() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (Array.isArray(data)) {
+                    for (const item of data) {
+                        await crearProductoDB(item);
+                    }
+                    mostrarToast('✅ Datos importados');
+                } else {
+                    mostrarToast('❌ Formato inválido');
+                }
+            } catch (err) {
+                mostrarToast('❌ Error al leer archivo');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+async function limpiarTodo() {
+    if (!confirm('⚠️ ¿Eliminar TODOS los productos?')) return;
+    if (!confirm('¿Seguro?')) return;
+
+    const productos = getProductos();
+    for (const p of productos) {
+        await eliminarProductoDB(p.id);
+    }
+    mostrarToast('🗑️ Todo resetado');
+}
+
+// ============================================================
+// CANJE
+// ============================================================
+
+async function canjearCodigo() {
+    const input = document.getElementById('codigoInput');
+    const codigo = input.value.trim().toUpperCase();
+    const resultado = document.getElementById('resultadoCanje');
+
+    if (!codigo || codigo.length < 10) {
+        resultado.innerHTML = `<div class="error">❌ Código inválido. Ejemplo: IX-ABCD-1234-EFGH</div>`;
+        return;
+    }
+
+    const productos = getProductos();
+    let productoEncontrado = null;
+    let codigoData = null;
+    let productoId = null;
+
+    for (const p of productos) {
+        const codigos = p.codigos || {};
+        if (codigos[codigo]) {
+            productoEncontrado = p;
+            codigoData = codigos[codigo];
+            productoId = p.id;
+            break;
+        }
+    }
+
+    if (!productoEncontrado) {
+        resultado.innerHTML = `<div class="error">❌ Código no encontrado</div>`;
+        return;
+    }
+
+    if (codigoData.usado) {
+        resultado.innerHTML = `<div class="error">❌ Código ya utilizado</div>`;
+        return;
+    }
+
+    codigoData.usado = true;
+    const codigos = productoEncontrado.codigos || {};
+    codigos[codigo] = codigoData;
+    await actualizarProductoDB(productoId, { codigos: codigos });
+
+    const emojis = { juego: '🎮', app: '📱', programa: '💻' };
+    const emoji = emojis[productoEncontrado.categoria] || '📦';
+    const archivos = productoEncontrado.archivos || [];
+    const tieneArchivos = archivos.length > 0;
+
+    let html = `
+        <div class="exito">
+            <h3 style="color:#00C853;">✅ ¡Código canjeado con éxito!</h3>
+            <div class="codigo-grande">${codigo}</div>
+            <p style="font-size:22px;font-weight:700;">${emoji} ${productoEncontrado.nombre}</p>
+            <p style="color:#8892B0;">${productoEncontrado.descripcion || ''}</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+                ${(productoEncontrado.plataformas || []).map(p => `<span style="background:rgba(255,255,255,0.04);padding:4px 16px;border-radius:20px;font-size:12px;border:1px solid rgba(255,255,255,0.04);">${p}</span>`).join('')}
+            </div>
+            <p style="color:#8892B0;">Versión: ${productoEncontrado.version || '1.0.0'} • ${productoEncontrado.precio || 'Gratis'}</p>
+    `;
+
+    if (tieneArchivos) {
+        html += `
+            <div style="margin:18px 0;padding:18px;background:rgba(0,200,83,0.04);border-radius:14px;border:1px solid rgba(0,200,83,0.08);">
+                <p style="font-weight:600;margin-bottom:10px;">📎 Archivos disponibles (${archivos.length}):</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    ${archivos.map((a, i) => `
+                        <button class="btn-sm btn-verde" onclick="descargarArchivoCanje(${i}, '${productoId}')" style="padding:8px 22px;">
+                            ⬇️ ${a.nombre} (${(a.tamaño/1024).toFixed(1)} KB)
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    } else {
+        html += `
+            <div style="margin:18px 0;padding:18px;background:rgba(255,214,0,0.04);border-radius:14px;border:1px solid rgba(255,214,0,0.08);">
+                <p style="color:#FFD600;">⚠️ Este producto no tiene instaladores adjuntos.</p>
+            </div>
+        `;
+    }
+
+    html += `
+            <p style="color:#8892B0;font-size:12px;margin-top:10px;">✅ Código marcado como usado</p>
+        </div>
+    `;
+
+    resultado.innerHTML = html;
+    input.value = '';
+}
+
+function descargarArchivoCanje(index, productoId) {
+    const productos = getProductos();
+    const producto = productos.find(p => p.id == productoId);
+    if (!producto) return;
+
+    const archivos = producto.archivos || [];
+    if (!archivos[index]) return;
+
+    const archivo = archivos[index];
+    const link = document.createElement('a');
+    link.href = archivo.datos;
+    link.download = archivo.nombre;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    mostrarToast(`⬇️ Descargando ${archivo.nombre}`);
+}
+
+function mostrarTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+    const target = document.getElementById(`tab-${tab}`);
+    if (target) target.classList.add('active');
+
+    document.querySelectorAll('.tab-btn').forEach(el => {
+        const onclick = el.getAttribute('onclick');
+        if (onclick && onclick.includes(`'${tab}'`)) {
+            el.classList.add('active');
+        }
+    });
+
+    if (tab === 'tienda') renderizarProductos();
+    if (tab === 'admin' && adminUnlocked) {
+        renderizarAdminLista();
+        actualizarStatsAdmin();
+    }
+}
+
+// ============================================================
+// INICIALIZAR
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await initSupabase();
+    await cargarProductos();
+
+    document.getElementById('codigoInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') canjearCodigo();
+    });
+
+    console.log('%c🔐 Admin: Ctrl+Shift+A', 'font-size:18px;color:#6C3CE1;font-weight:bold;');
+    console.log('%c🔑 Contraseña: By7MKYKR9QrtmGI5iqJOKzvVfqBoMV', 'font-size:14px;color:#8892B0;');
+});
+</script>
+
+<!-- ============================================================
+     🔥 CREDENCIALES DE SUPABASE - REEMPLAZA AQUÍ
+     ============================================================ -->
+<script>
+    // ============================================================
+    // 🔴 ¡REEMPLAZA CON TUS DATOS DE SUPABASE!
+    // ============================================================
+    const SUPABASE_URL = 'https://webdjvruyxcavrkttnwo.supabase.co';  // 👈 TU URL
+    const SUPABASE_KEY = 'sb_publishable_dO6b78SSlukq-uoFEUlZLQ_1-xYSc4i';
+    // ============================================================
+</script>
+
+</body>
+</html>
